@@ -20,6 +20,7 @@ import Int "mo:base/Int";
 import Timer "mo:base/Timer";
 import MatchSimulator "MatchSimulator";
 import Random "mo:base/Random";
+import Rng "../Rng";
 
 actor class StadiumActor(leagueId : Principal) : async Stadium.StadiumActor {
     type Match = Stadium.Match;
@@ -73,6 +74,7 @@ actor class StadiumActor(leagueId : Principal) : async Stadium.StadiumActor {
             let teamPlayers = await PlayerLedgerActor.getTeamPlayers(?team.id);
             {
                 id = team.id;
+                name = "Team " # Principal.toText(team.id); // TODO get team name
                 lineup = team.lineup;
                 players = teamPlayers;
             };
@@ -98,7 +100,7 @@ actor class StadiumActor(leagueId : Principal) : async Stadium.StadiumActor {
             case (#inProgress(s)) s;
             case (#notStarted) return #notStarted;
         };
-        let random = Random.Finite(await Random.blob());
+        let random = Rng.FiniteRng(Random.Finite(await Random.blob()));
         let newState = MatchSimulator.tick(state, random);
         addOrUpdateMatch(
             matchId,

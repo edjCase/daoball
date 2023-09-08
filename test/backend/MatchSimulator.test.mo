@@ -7,6 +7,9 @@ import Hash "mo:base/Hash";
 import Player "../../src/backend/Player";
 import Nat32 "mo:base/Nat32";
 import Debug "mo:base/Debug";
+import Rng "../../src/backend/Rng";
+import Int "mo:base/Int";
+import Principal "mo:base/Principal";
 
 type FieldPosition = Player.FieldPosition;
 type PlayerState = Stadium.PlayerState;
@@ -27,12 +30,11 @@ func fromArray<TKey, TValue>(array : [(TKey, TValue)], hashKey : (TKey) -> Hash.
 test(
     "tick",
     func() {
-        // let seed : Blob = "\14\C9\72\09\03\D4\D5\72\82\95\E5\43\AF\FA\A9\44\49\2F\25\56\13\F3\6E\C7\B0\87\DC\76\08\69\14\CF";
-        let seed : Blob = "\A1\B2\C3\D4\E5\F6\10\11\12\13\14\15\16\17\18\19\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27\1A\1B\1C\1D\1E\1F\20\21\22\23\24\25\26\27";
-        let random = Random.Finite(seed);
         let state : Stadium.InProgressMatchState = {
             offenseTeamId = #team1;
             team1 = {
+                id = Principal.fromText("un4fu-tqaaa-aaaab-qadjq-cai");
+                name = "Team 1";
                 battingOrder = [
                     #rightField,
                     #centerField,
@@ -64,6 +66,8 @@ test(
                 substitutes = [];
             };
             team2 = {
+                id = Principal.fromText("js5dc-4abaa-aaaab-qadjq-cai");
+                name = "Team 2";
                 battingOrder = [
                     #pitcher,
                     #catcher,
@@ -352,6 +356,21 @@ test(
                             };
                         },
                     ),
+                    (
+                        17,
+                        {
+                            name = "Player 17";
+                            condition = #ok;
+                            energy = 100;
+                            teamId = #team2;
+                            preferredPosition = #rightField;
+                            skills = {
+                                batting = 0;
+                                throwing = 0;
+                                catching = 0;
+                            };
+                        },
+                    ),
                 ],
                 func(v : Nat32) : Nat32 = v,
                 Nat32.equal,
@@ -361,11 +380,24 @@ test(
             outs = 0;
             strikes = 0;
         };
+        let rng = Rng.PseudoRng(1);
         var currentState = state;
-        loop {
-            let #inProgress(newState) = MatchSimulator.tick(currentState, random) else Debug.trap("MatchSimulator.tick failed");
-            Debug.print(debug_show (newState.events));
-            currentState := newState;
+        label l loop {
+            switch (MatchSimulator.tick(currentState, rng)) {
+                case (#inProgress(newState)) {
+                    currentState := newState;
+                };
+                case (#completed(#gameResult(endState))) {
+                    for (event in endState.events.vals()) {
+                        Debug.print(event.description);
+                    };
+                    Debug.print("Final score: (" # endState.team1.name # ") " # Int.toText(endState.team1.score) # " - " # Int.toText(endState.team2.score) # " (" # endState.team2.name # ")");
+                    break l;
+                };
+                case (unhandled) {
+                    Debug.print("Unhandled state: " # debug_show (unhandled));
+                };
+            };
         };
     },
 );

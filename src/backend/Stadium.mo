@@ -35,6 +35,11 @@ module {
         #team2;
     };
 
+    public type TeamSide = {
+        #offense;
+        #defense;
+    };
+
     public type EventEffect = {
         #none;
         #increaseScore : {
@@ -80,6 +85,8 @@ module {
     };
 
     public type TeamState = {
+        id : Principal;
+        name : Text;
         score : Int;
         positions : Trie.Trie<FieldPosition, Nat32>;
         battingOrder : [FieldPosition];
@@ -115,6 +122,8 @@ module {
         #gameResult : {
             team1 : TeamState;
             team2 : TeamState;
+            players : Trie.Trie<Nat32, PlayerState>;
+            events : [Event];
             winner : TeamId;
         };
     };
