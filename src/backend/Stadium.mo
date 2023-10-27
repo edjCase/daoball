@@ -37,14 +37,14 @@ module {
         #team2;
     };
 
-    public type Turn = {
-        events : [Event];
+    public type MatchTurn = {
+        events : [MatchEvent];
     };
 
-    public type Event = {
+    public type MatchEvent = {
         #pitch : { pitchRoll : Nat };
         #hit : { hitRoll : Nat };
-        #run : { base : Base; ballLocation : ?FieldPosition; runRoll : Nat };
+        #run : { fromBase : Base; toBase : Base };
         #foul;
         #strike;
         #out : PlayerId;
@@ -107,7 +107,7 @@ module {
         rightField : PlayerId;
     };
 
-    public type OffsenseFieldState = {
+    public type OffenseFieldState = {
         atBat : PlayerId;
         firstBase : ?PlayerId;
         secondBase : ?PlayerId;
@@ -116,7 +116,7 @@ module {
 
     public type FieldState = {
         defense : DefenseFieldState;
-        offense : OffsenseFieldState;
+        offense : OffenseFieldState;
     };
 
     public type InProgressMatchState = {
@@ -127,7 +127,7 @@ module {
         players : [PlayerStateWithId];
         batter : ?PlayerId;
         field : FieldState;
-        turns : [Turn];
+        turns : [MatchTurn];
         round : Nat;
         outs : Nat;
         strikes : Nat;
@@ -144,7 +144,7 @@ module {
         team2 : CompletedTeamState;
         winner : TeamId;
         initialState : InProgressMatchState;
-        turns : [Turn];
+        turns : [MatchTurn];
     };
 
     public type CompletedTeamState = {
