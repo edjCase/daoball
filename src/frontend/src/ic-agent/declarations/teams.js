@@ -1,4 +1,13 @@
 export const idlFactory = ({ IDL }) => {
+  const Skill = IDL.Variant({
+    'battingAccuracy' : IDL.Null,
+    'throwingAccuracy' : IDL.Null,
+    'speed' : IDL.Null,
+    'catching' : IDL.Null,
+    'battingPower' : IDL.Null,
+    'defense' : IDL.Null,
+    'throwingPower' : IDL.Null,
+  });
   const FieldPosition = IDL.Variant({
     'rightField' : IDL.Null,
     'leftField' : IDL.Null,
@@ -9,22 +18,13 @@ export const idlFactory = ({ IDL }) => {
     'centerField' : IDL.Null,
     'firstBase' : IDL.Null,
   });
-  const Skill = IDL.Variant({
-    'battingAccuracy' : IDL.Null,
-    'throwingAccuracy' : IDL.Null,
-    'speed' : IDL.Null,
-    'catching' : IDL.Null,
-    'battingPower' : IDL.Null,
-    'defense' : IDL.Null,
-    'throwingPower' : IDL.Null,
-  });
   const ProposalContent = IDL.Variant({
+    'train' : IDL.Record({ 'skill' : Skill, 'position' : FieldPosition }),
     'changeName' : IDL.Record({ 'name' : IDL.Text }),
     'swapPlayerPositions' : IDL.Record({
       'position1' : FieldPosition,
       'position2' : FieldPosition,
     }),
-    'trainPlayer' : IDL.Record({ 'playerId' : IDL.Nat32, 'skill' : Skill }),
   });
   const CreateProposalRequest = IDL.Record({ 'content' : ProposalContent });
   const CreateProposalResult = IDL.Variant({

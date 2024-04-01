@@ -4,6 +4,13 @@ export const idlFactory = ({ IDL }) => {
     'ok' : IDL.Null,
     'matchGroupNotFound' : IDL.Null,
   });
+  const PlayerId = IDL.Nat32;
+  const BaseState = IDL.Record({
+    'atBat' : PlayerId,
+    'thirdBase' : IDL.Opt(PlayerId),
+    'secondBase' : IDL.Opt(PlayerId),
+    'firstBase' : IDL.Opt(PlayerId),
+  });
   const PlayerId__1 = IDL.Nat32;
   const OutReason = IDL.Variant({
     'strikeout' : IDL.Null,
@@ -108,7 +115,10 @@ export const idlFactory = ({ IDL }) => {
     'matchEnd' : IDL.Record({ 'reason' : MatchEndReason }),
     'death' : IDL.Record({ 'playerId' : IDL.Nat32 }),
   });
-  const TurnLog = IDL.Record({ 'events' : IDL.Vec(Event) });
+  const TurnLog = IDL.Record({
+    'initialBaseState' : BaseState,
+    'events' : IDL.Vec(Event),
+  });
   const RoundLog = IDL.Record({ 'turns' : IDL.Vec(TurnLog) });
   const MatchLog = IDL.Record({ 'rounds' : IDL.Vec(RoundLog) });
   const TeamPositions = IDL.Record({
@@ -129,7 +139,6 @@ export const idlFactory = ({ IDL }) => {
     'logoUrl' : IDL.Text,
     'positions' : TeamPositions,
   });
-  const PlayerId = IDL.Nat32;
   const PlayerMatchStats = IDL.Record({
     'battingStats' : IDL.Record({
       'homeRuns' : IDL.Nat,
@@ -175,12 +184,6 @@ export const idlFactory = ({ IDL }) => {
     'teamId' : TeamId,
     'skills' : Skills,
     'condition' : PlayerCondition,
-  });
-  const BaseState = IDL.Record({
-    'atBat' : PlayerId,
-    'thirdBase' : IDL.Opt(PlayerId),
-    'secondBase' : IDL.Opt(PlayerId),
-    'firstBase' : IDL.Opt(PlayerId),
   });
   const Match = IDL.Record({
     'log' : MatchLog,

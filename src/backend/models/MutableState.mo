@@ -39,12 +39,8 @@ module {
         var thirdBase : ?Player.PlayerId;
     };
 
-    public type MutableTurnLog = {
-        events : Buffer.Buffer<StadiumTypes.Event>;
-    };
-
     public type MutableRoundLog = {
-        turns : Buffer.Buffer<MutableTurnLog>;
+        turns : Buffer.Buffer<StadiumTypes.TurnLog>;
     };
 
     public type MutableMatchLog = {
@@ -77,20 +73,11 @@ module {
             };
         };
 
-        private func toMutableTurnLog(turn : StadiumTypes.TurnLog) : MutableTurnLog {
-            {
-                events = turn.events
-                |> Iter.fromArray(_)
-                |> Buffer.fromIter<StadiumTypes.Event>(_);
-            };
-        };
-
         private func toMutableRoundLog(round : StadiumTypes.RoundLog) : MutableRoundLog {
             {
                 turns = round.turns
                 |> Iter.fromArray(_)
-                |> Iter.map(_, toMutableTurnLog)
-                |> Buffer.fromIter<MutableTurnLog>(_);
+                |> Buffer.fromIter<StadiumTypes.TurnLog>(_);
             };
         };
 
@@ -264,28 +251,12 @@ module {
             };
         };
 
-        public func addEvent(event : StadiumTypes.Event) {
+        public func endTurn(turn : StadiumTypes.TurnLog) {
             if (log.rounds.size() == 0) {
                 addNewRound();
             };
             let currentRound = log.rounds.get(log.rounds.size() - 1);
-            if (currentRound.turns.size() == 0) {
-                currentRound.turns.add({
-                    events = Buffer.Buffer<StadiumTypes.Event>(0);
-                });
-            };
-            let currentTurn = currentRound.turns.get(currentRound.turns.size() - 1);
-            currentTurn.events.add(event);
-        };
-
-        public func startTurn() {
-            if (log.rounds.size() == 0) {
-                addNewRound();
-            };
-            let currentRound = log.rounds.get(log.rounds.size() - 1);
-            currentRound.turns.add({
-                events = Buffer.Buffer<StadiumTypes.Event>(0);
-            });
+            currentRound.turns.add(turn);
         };
 
         public func endRound() {
@@ -293,12 +264,8 @@ module {
         };
 
         private func addNewRound() {
-            let turns = Buffer.Buffer<MutableTurnLog>(0);
-            turns.add({
-                events = Buffer.Buffer<StadiumTypes.Event>(0);
-            });
             log.rounds.add({
-                turns = Buffer.Buffer<MutableTurnLog>(0);
+                turns = Buffer.Buffer<StadiumTypes.TurnLog>(0);
             });
         };
     };

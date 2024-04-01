@@ -61,14 +61,16 @@ export interface Proposal {
   'proposer' : Principal,
   'timeEnd' : bigint,
 }
-export type ProposalContent = { 'changeName' : { 'name' : string } } |
+export type ProposalContent = {
+    'train' : { 'skill' : Skill, 'position' : FieldPosition }
+  } |
+  { 'changeName' : { 'name' : string } } |
   {
     'swapPlayerPositions' : {
       'position1' : FieldPosition,
       'position2' : FieldPosition,
     }
-  } |
-  { 'trainPlayer' : { 'playerId' : number, 'skill' : Skill } };
+  };
 export type ProposalStatusLogEntry = {
     'failedToExecute' : { 'time' : Time, 'error' : string }
   } |

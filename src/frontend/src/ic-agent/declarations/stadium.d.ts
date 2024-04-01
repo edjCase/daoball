@@ -250,7 +250,10 @@ export interface Trait {
   'name' : string,
   'description' : string,
 }
-export interface TurnLog { 'events' : Array<Event> }
+export interface TurnLog {
+  'initialBaseState' : BaseState,
+  'events' : Array<Event>,
+}
 export interface _SERVICE {
   'cancelMatchGroup' : ActorMethod<
     [CancelMatchGroupRequest],

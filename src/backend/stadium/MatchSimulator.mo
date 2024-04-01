@@ -1,4 +1,3 @@
-import Principal "mo:base/Principal";
 import Buffer "mo:base/Buffer";
 import Nat32 "mo:base/Nat32";
 import StadiumTypes "../stadium/Types";
@@ -181,7 +180,6 @@ module {
         let state : MutableState.MutableMatchState = MutableState.MutableMatchState(initialState);
 
         public func tick() : StadiumTypes.TickResult {
-            state.startTurn();
             if (state.log.rounds.size() < 1) {
                 // Need to log first batter, others handled when batter switches
                 updateStats(
@@ -196,20 +194,8 @@ module {
                     context = ();
                 });
             };
-
-            // TODO divine intervention
-            // let roll = Hook.trigger(state, #divineInterventionRoll);
-            // let divineInterventionRoll = prng.nextNat(0, 999);
-            // let result = if (divineInterventionRoll <= 9) {
-            //     state.log.add({
-            //         message = "Divine intervention!";
-            //         isImportant = true;
-            //     });
-            //     let ?randomPlayerId = getRandomAvailablePlayer(null, null, false) else Prelude.unreachable();
-            //     blessOrCursePlayer(randomPlayerId);
-            // } else {
             let result = pitch();
-            // };
+            state.endTurn(turn)
 
             buildTickResult(result);
         };
@@ -336,14 +322,7 @@ module {
         private func fromMutableRoundLog(log : MutableState.MutableRoundLog) : StadiumTypes.RoundLog {
             {
                 turns = log.turns.vals()
-                |> Iter.map(_, fromMutableTurns)
                 |> Iter.toArray(_);
-            };
-        };
-
-        private func fromMutableTurns(log : MutableState.MutableTurnLog) : StadiumTypes.TurnLog {
-            {
-                events = Buffer.toArray(log.events);
             };
         };
 

@@ -13,6 +13,7 @@
   import FieldBase from "./FieldBase.svelte";
   import { BaseEnum } from "../../models/Base";
   import FieldBall from "./FieldBall.svelte";
+  import { tweened } from "svelte/motion";
 
   export let match: LiveMatch;
 
@@ -54,7 +55,17 @@
 
   let liveData: LiveData | undefined;
 
-  let ballLocations: { x: number; y: number; color: string }[] = [];
+  let eventText: string | undefined;
+
+  const ballLocation = tweened(pitcherPosition);
+  const playerPositions = [];
+
+  type AnimationTurn = {
+    duration: number;
+    operations: (() => void)[];
+  };
+
+  let animationTurns: AnimationTurn[] = [];
 
   let getPositionCoordinates = (
     position: FieldPositionEnum,
@@ -74,6 +85,8 @@
         return shortStopPosition;
       case FieldPositionEnum.ThirdBase:
         return thirdBasePosition;
+      case FieldPositionEnum.Pitcher:
+        return pitcherPosition;
       default:
         throw new Error("Not implemented position: " + position);
     }
@@ -82,6 +95,7 @@
   let getPlayerBaseCoordinates = (
     playerId: number,
     bases: BaseState,
+    initialBases: BaseState,
   ): { x: number; y: number } | undefined => {
     if (playerId == bases.atBat) {
       return homeBaseLocation;
@@ -92,37 +106,33 @@
     } else if (bases.thirdBase.length > 0 && playerId == bases.thirdBase[0]) {
       return thirdBaseLocation;
     }
+    // Fallback to base position of last turn + 1, since they are not on the field anymore
+    if (playerId == initialBases.atBat) {
+      return firstBaseLocation;
+    } else if (
+      initialBases.firstBase.length > 0 &&
+      playerId == initialBases.firstBase[0]
+    ) {
+      return secondBaseLocation;
+    } else if (
+      initialBases.secondBase.length > 0 &&
+      playerId == initialBases.secondBase[0]
+    ) {
+      return thirdBaseLocation;
+    } else if (
+      initialBases.thirdBase.length > 0 &&
+      playerId == initialBases.thirdBase[0]
+    ) {
+      return homeBaseLocation;
+    }
     return undefined;
   };
 
-  // let getPlayerFieldCoordinates = (
-  //   playerId: number,
-  //   team: LiveTeamDetails,
-  // ): { x: number; y: number } | undefined => {
-  //   let position: FieldPositionEnum;
-  //   if (team.positions.centerField === playerId) {
-  //     position = FieldPositionEnum.CenterField;
-  //   } else if (team.positions.leftField === playerId) {
-  //     position = FieldPositionEnum.LeftField;
-  //   } else if (team.positions.rightField === playerId) {
-  //     position = FieldPositionEnum.RightField;
-  //   } else if (team.positions.firstBase === playerId) {
-  //     position = FieldPositionEnum.FirstBase;
-  //   } else if (team.positions.secondBase === playerId) {
-  //     position = FieldPositionEnum.SecondBase;
-  //   } else if (team.positions.shortStop === playerId) {
-  //     position = FieldPositionEnum.ShortStop;
-  //   } else if (team.positions.thirdBase === playerId) {
-  //     position = FieldPositionEnum.ThirdBase;
-  //   } else {
-  //     return undefined;
-  //   }
-  //   return getPositionCoordinates(position);
-  // };
-
   $: if (match.liveState) {
+    eventText = undefined;
     let offenseTeam;
     let defenseTeam;
+
     if ("team1" in match.liveState.offenseTeamId) {
       offenseTeam = match.team1;
       defenseTeam = match.team2;
@@ -130,90 +140,36 @@
       offenseTeam = match.team2;
       defenseTeam = match.team1;
     }
-    ballLocations = [{ ...homeBaseLocation, color: "white" }];
-    if (match.log && match.log.rounds.length > 0) {
-      let currentRound = match.log.rounds[match.log.rounds.length - 1];
-      let lastTurn = currentRound.turns[currentRound.turns.length - 1];
-      if (lastTurn.events.length > 0) {
-        let swingEvent = lastTurn.events.find((e: any) => "swing" in e); // TODO how to return swing
-        if (swingEvent && "swing" in swingEvent) {
-          if ("foul" in swingEvent.swing.outcome) {
-            ballLocations.push({ x: 100, y: 110, color: "red" });
-          } else if ("hit" in swingEvent.swing.outcome) {
-            if ("stands" in swingEvent.swing.outcome.hit) {
-              // Homerun
-              ballLocations.push({ x: 45, y: -5, color: "blue" });
-            } else {
-              let ballLocation = getPositionCoordinates(
-                toEnum(swingEvent.swing.outcome.hit),
-              );
-              ballLocations.push({ ...ballLocation, color: "white" });
-              let throwEvent = lastTurn.events.find((e) => "throw" in e); // TODO how to return throw
-              if (throwEvent && "throw" in throwEvent) {
-                let or = <T,>(a: [T] | [], b: [T] | []) =>
-                  a.length > 0 ? a : b;
-                let fixedBases: BaseState = {
-                  // Add any outted players to the bases from previous turn
-                  atBat:
-                    liveData?.liveState?.bases.thirdBase[0] ??
-                    match.liveState.bases.atBat,
-                  firstBase: or(
-                    match.liveState.bases.firstBase,
-                    liveData?.liveState?.bases.atBat
-                      ? [liveData.liveState.bases.atBat]
-                      : [],
-                  ),
-                  secondBase: or(
-                    match.liveState.bases.secondBase,
-                    liveData?.liveState?.bases.firstBase ?? [],
-                  ),
-                  thirdBase: or(
-                    match.liveState.bases.thirdBase,
-                    liveData?.liveState?.bases.secondBase ?? [],
-                  ),
-                };
-                let position = getPlayerBaseCoordinates(
-                  throwEvent.throw.to,
-                  fixedBases,
-                );
-                if (position === undefined) {
-                  // TODO currently there is an issue where liveState hasn't been initialized yet, but there was an
-                  // out last turn, so the player is not on the field anymore and we dont have the last turn base state
-                  // Add out position? or something
-                  console.error(
-                    "Could not find position for player to throw to: " +
-                      throwEvent.throw.to,
-                  );
-                } else {
-                  let hitByBallEvent = lastTurn.events.find(
-                    (e) => "hitByBall" in e,
-                  ); // TODO how to return hitByBall
-                  let color: string;
-                  if (
-                    hitByBallEvent &&
-                    "hitByBall" in hitByBallEvent &&
-                    hitByBallEvent.hitByBall.playerId == throwEvent.throw.to
-                  ) {
-                    color = "green";
-                  } else {
-                    color = "red";
-                  }
-                  ballLocations.push({ ...position, color: color });
-                }
-              }
-            }
-          } else {
-            // Strike
-            ballLocations.push({ x: 45, y: 110, color: "red" });
-          }
-        }
-      }
-    }
     liveData = {
       liveState: match.liveState,
       offenseTeam: offenseTeam,
       defenseTeam: defenseTeam,
     };
+    if (match.log && match.log.rounds.length > 0) {
+      let currentRound = match.log.rounds[match.log.rounds.length - 1];
+      let lastTurn = currentRound.turns[currentRound.turns.length - 1];
+      if (lastTurn.events.length > 0) {
+        lastTurn.events.forEach((e) => {
+          if ("pitch" in e) {
+            animationTurns.push({
+              duration: 1000,
+              operations: [
+                () => {
+                  ballLocation.set(homeBaseLocation);
+                },
+              ],
+            });
+          } else if ("swing" in e) {
+            if (e.swing.)
+            animationTurns[animationTurns.length - 1].operations.push(() => {
+              ballLocation.set(secondBaseLocation);
+            });
+          } else {
+            throw new Error("Not implemented event: " + JSON.stringify(e));
+          }
+        });
+      }
+    }
   } else {
     liveData = undefined;
   }
@@ -325,8 +281,12 @@
         position={FieldPositionEnum.Pitcher}
       />
 
+      <text x={10} y={88} font-size={8} fill="white">
+        {eventText || ""}
+      </text>
+
       <!-- Baseball -->
-      <FieldBall origin={pitcherPosition} locations={ballLocations} />
+      <FieldBall location={$ballLocation} />
 
       <!-- Text -->
       <text x={60} y={88} font-size={3} fill="white">

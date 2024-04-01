@@ -1,11 +1,11 @@
 import Principal "mo:base/Principal";
 import Player "../models/Player";
 import Nat "mo:base/Nat";
+import Bool "mo:base/Bool";
 import MatchAura "../models/MatchAura";
 import Base "../models/Base";
 import Team "../models/Team";
 import FieldPosition "../models/FieldPosition";
-import Trait "../models/Trait";
 
 module {
     type FieldPosition = FieldPosition.FieldPosition;
@@ -93,93 +93,47 @@ module {
     };
 
     public type TurnLog = {
-        events : [Event];
+        initialBaseState : BaseState;
+        pitch : PitchLog;
+        swing : SwingLog;
+    };
+
+    public type PitchLog = {
+        #ball;
+        #strike;
+    };
+
+    public type SwingLog = {
+        playerId : Player.PlayerId;
+        outcome : {
+            #foul;
+            #strike;
+            #strikeout : {
+                newBatter : Player.PlayerId;
+            };
+            #hit : {
+                location : HitLocation;
+                catcher : Player.PlayerId;
+                caught : Bool;
+                throw_ : {
+                    #none;
+                    #miss;
+                    #hit : {
+                        hitPlayer : Player.PlayerId;
+                        injury : ?Player.Injury;
+                    };
+                };
+                safeAtBases : [{
+                    base : Base.Base;
+                    playerId : Player.PlayerId;
+                }];
+                newBatter : Player.PlayerId;
+            };
+        };
     };
 
     public type HitLocation = FieldPosition.FieldPosition or {
         #stands;
-    };
-
-    public type Event = {
-        #traitTrigger : {
-            id : Trait.Trait;
-            playerId : Player.PlayerId;
-            description : Text;
-        };
-        #auraTrigger : {
-            id : MatchAura.MatchAura;
-            description : Text;
-        };
-        #pitch : {
-            pitcherId : Player.PlayerId;
-            roll : {
-                value : Int;
-                crit : Bool;
-            };
-        };
-        #swing : {
-            playerId : Player.PlayerId;
-            roll : {
-                value : Int;
-                crit : Bool;
-            };
-            pitchRoll : {
-                value : Int;
-                crit : Bool;
-            };
-            outcome : {
-                #foul;
-                #strike;
-                #hit : HitLocation;
-            };
-        };
-        #catch_ : {
-            playerId : Player.PlayerId;
-            roll : {
-                value : Int;
-                crit : Bool;
-            };
-            difficulty : {
-                value : Int;
-                crit : Bool;
-            };
-        };
-        #teamSwap : {
-            offenseTeamId : Team.TeamId;
-            atBatPlayerId : Player.PlayerId;
-        };
-        #injury : {
-            playerId : Nat32;
-            injury : Player.Injury;
-        };
-        #death : {
-            playerId : Nat32;
-        };
-        #score : {
-            teamId : Team.TeamId;
-            amount : Int;
-        };
-        #newBatter : {
-            playerId : Player.PlayerId;
-        };
-        #out : {
-            playerId : Player.PlayerId;
-            reason : OutReason;
-        };
-        #matchEnd : {
-            reason : MatchEndReason;
-        };
-        #safeAtBase : {
-            playerId : Player.PlayerId;
-            base : Base.Base;
-        };
-        #throw_ : {
-            from : Player.PlayerId;
-            to : Player.PlayerId;
-        };
-        #hitByBall : {
-            playerId : Player.PlayerId;
-        };
     };
 
     public type MatchEndReason = {
